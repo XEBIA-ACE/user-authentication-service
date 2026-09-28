@@ -1,0 +1,171 @@
+openspec: '1.0'
+story:
+  id: US-001
+  title: User Secure Login
+  description: Allows administrators to log into the system using secure credentials
+    and prevents unauthorized access by showing error messages upon incorrect login
+    attempts.
+  feature:
+    id: F-02
+    title: Ticket Management System
+  epic:
+    id: EP-001
+    title: User Login and Authentication
+  status: draft
+functional_requirement:
+  description: "## S-002\n\n### Purpose\nDefine functional behavior for secure administrator\
+    \ login via the User Authentication Service to grant or deny access based on credential\
+    \ validity.\n\n### Scope\nCovers administrator interactive login, credential validation,\
+    \ access grant/deny behavior, error messaging, and related audit aspects for the\
+    \ User Authentication Service only.\n\n### Non-Goals\n1. Password reset and recovery\
+    \ flows  \n2. New user registration and provisioning  \n3. Multi-factor authentication\
+    \ behavior  \n4. Session refresh and logout behavior  \n5. Role-based authorization\
+    \ within downstream systems  \n6. Password strength and rotation policies  \n\
+    7. Account lifecycle management (create/disable/delete)  \n8. Localization of\
+    \ messages beyond English  \n9. Client UI layout and visual styling  \n10. Rate\
+    \ limiting and intrusion detection algorithms  \n\n### Key Entities\nAdministratorUser:\
+    \  \n- id: string  \n- username: string  \n- email: string  \n- isActive: boolean\
+    \  \n- isLocked: boolean  \n- failedLoginCount: integer  \n- lastLoginAt: datetime\
+    \  \n\nCredentialSubmission:  \n- usernameOrEmail: string  \n- password: string\
+    \  \n- clientDeviceId: string [NEEDS CLARIFICATION: Is client device identifier\
+    \ required?]  \n- clientIpAddress: string  \n\nAuthSession:  \n- sessionId: string\
+    \  \n- userId: string  \n- issuedAt: datetime  \n- expiresAt: datetime  \n\nLoginResult:\
+    \  \n- success: boolean  \n- errorCode: string (nullable)  \n- errorMessage: string\
+    \ (nullable)  \n- requiresAdditionalAction: boolean  \n\nRelationship:  \n- AdministratorUser\
+    \ 1..1 – 0..* AuthSession  \n- AdministratorUser 1..1 – 0..* CredentialSubmission\
+    \ (logical audit trail)  \n\n### Functional Requirements\nFR-001: User Authentication\
+    \ Service MUST authenticate CredentialSubmission against stored administrator\
+    \ credentials.  \nFR-002: User Authentication Service MUST grant system access\
+    \ when credentials match an active AdministratorUser.  \nFR-003: User Authentication\
+    \ Service MUST deny system access when credentials are invalid.  \nFR-004: User\
+    \ Authentication Service MUST return a non-sensitive error message on failed login.\
+    \  \nFR-005: User Authentication Service MUST NOT disclose whether username or\
+    \ password was incorrect.  \nFR-006: User Authentication Service SHOULD treat\
+    \ username and email as alternative login identifiers.  \nFR-007: User Authentication\
+    \ Service MUST validate that AdministratorUser isActive before granting access.\
+    \  \nFR-008: User Authentication Service MUST handle non-existent accounts as\
+    \ invalid credentials.  \nFR-009: User Authentication Service SHOULD record a\
+    \ successful login timestamp for AdministratorUser.  \nFR-010: User Authentication\
+    \ Service SHOULD increment failedLoginCount on failed attempts.  \nFR-011: User\
+    \ Authentication Service MAY include a generic reason code in LoginResult for\
+    \ client behavior.  \nFR-012: User Authentication Service MUST establish an AuthSession\
+    \ on successful login.  \nFR-013: User Authentication Service MUST ensure AuthSession\
+    \ belongs to the authenticated AdministratorUser.  \nFR-014: User Authentication\
+    \ Service SHOULD validate basic CredentialSubmission format before authentication.\
+    \  \nFR-015: User Authentication Service MUST prevent login for locked AdministratorUser\
+    \ accounts.  \nFR-016: User Authentication Service SHOULD make error messages\
+    \ consistent across failure modes.  \nFR-017: User Authentication Service MUST\
+    \ operate identically for web and mobile clients.  \nFR-018: User Authentication\
+    \ Service SHOULD provide response data needed by downstream Ticket Management\
+    \ System to identify the user.  \nFR-019: User Authentication Service MUST NOT\
+    \ expose password or password-derived data in any response.  \nFR-020: User Authentication\
+    \ Service MAY log authentication outcomes for audit and security analysis.  \n\
+    \n### Edge Cases\nEC-001 (FR-001, FR-003, P2):  \nGiven an administrator submits\
+    \ a blank usernameOrEmail and non-blank password,  \nWhen the login is processed,\
+    \  \nThen access is denied and a generic invalid-credentials error is returned.\n\
+    \nEC-002 (FR-001, FR-003, FR-005, P2):  \nGiven an administrator submits a valid\
+    \ username with an empty password,  \nWhen the login is processed,  \nThen access\
+    \ is denied with the same generic error as any other failure.\n\nEC-003 (FR-001,\
+    \ FR-003, FR-008, P2):  \nGiven a usernameOrEmail that does not match any AdministratorUser,\
+    \  \nWhen the login is processed,  \nThen the system behaves as for invalid credentials\
+    \ without indicating account absence.\n\nEC-004 (FR-001, FR-003, FR-007, P2):\
+    \  \nGiven an administrator account that is inactive,  \nWhen correct credentials\
+    \ are submitted,  \nThen access is denied and a generic unauthorized error is\
+    \ returned without exposing status details.\n\nEC-005 (FR-001, FR-003, FR-015,\
+    \ P2):  \nGiven an administrator account that is locked due to policy,  \nWhen\
+    \ correct credentials are submitted,  \nThen access is denied and a non-specific\
+    \ error is returned.\n\nEC-006 (FR-004, FR-016, P2):  \nGiven repeated failed\
+    \ login attempts with differing mistakes,  \nWhen each attempt fails,  \nThen\
+    \ the error message text remains identical across attempts.\n\nEC-007 (FR-001,\
+    \ FR-002, FR-012, P1):  \nGiven an active, unlocked administrator with correct\
+    \ credentials,  \nWhen they submit login,  \nThen access is granted and a valid\
+    \ AuthSession is established.\n\nEC-008 (FR-001, FR-002, FR-009, P2):  \nGiven\
+    \ an active administrator logging in successfully after prior success,  \nWhen\
+    \ login completes,  \nThen lastLoginAt is updated to the most recent successful\
+    \ login time.\n\n### Assumptions\nA-001: Only administrators are allowed to log\
+    \ in via this flow. (Affects FR-001, FR-002, FR-007, FR-015, EC-007)  \nA-002:\
+    \ Error messages must not reveal which field caused failure. (Affects FR-004,\
+    \ FR-005,"
+  acceptance_criteria:
+  - given_when_then: Given an administrator, when they enter correct login credentials,
+      then they should be granted access to the system.
+  - given_when_then: Given an administrator, when they enter incorrect login credentials,
+      then an error message should be displayed.
+  epic_acceptance_criteria:
+  - given_when_then: Given a registered user, when they enter correct credentials,
+      then they should be logged in successfully.
+  - given_when_then: Given a failed login attempt, when incorrect credentials are
+      entered, then an error message should guide the user.
+  - given_when_then: Given a user wants to reset their password, when they follow
+      the reset process, then they should set a new password successfully.
+  - given_when_then: Given role-based access, when a user logs in, then they should
+      see content appropriate for their role.
+  - given_when_then: Given session management, when a user logs off, then their session
+      should be terminated immediately.
+technical_design:
+  description: "## S-002\n\n1. Contracts & Interfaces\n\n1.1 HTTP API Contract\n\n\
+    Endpoint: POST /auth/login  \nPurpose: Administrator interactive login (FR-001–FR-003,\
+    \ FR-012, FR-017)\n\nRequest body (application/json):\n\n- usernameOrEmail: string,\
+    \ REQUIRED, non-empty (FR-006, FR-014, EC-001–EC-003)\n- password: string, REQUIRED,\
+    \ non-empty (FR-001, FR-014, EC-002)\n- clientDeviceId: string, OPTIONAL [NEEDS\
+    \ CLARIFICATION: Is clientDeviceId mandatory or optional?] (Assumed: optional)\
+    \  \n- clientIpAddress: string, OPTIONAL; if absent, server SHALL derive from\
+    \ X-Forwarded-For or remote addr\n\nResponse body (application/json):\n\n- success:\
+    \ boolean (FR-002, FR-003, EC-007)\n- errorCode: string | null (FR-004, FR-011,\
+    \ FR-016)\n  - Possible values:\n    - \"INVALID_CREDENTIALS\" (covers EC-001–EC-003,\
+    \ EC-006)\n    - \"UNAUTHORIZED\" (inactive/locked; EC-004–EC-005)\n  - MUST NOT\
+    \ distinguish username vs password cause (FR-005)\n- errorMessage: string | null;\
+    \ English, generic and identical across all invalid cases (FR-004, FR-005, FR-016,\
+    \ EC-006)\n- requiresAdditionalAction: boolean (always false for this flow; reserved\
+    \ for MFA etc.) (FR-011)\n- sessionId: string | null (FR-012–FR-013, EC-007)\n\
+    - user:\n  - id: string\n  - username: string\n  - email: string\n  This block\
+    \ MUST be present only when success = true (FR-018, FR-019)\n- issuedAt: ISO-8601\
+    \ datetime string | null\n- expiresAt: ISO-8601 datetime string | null\n\nHTTP\
+    \ status codes:\n\n- 200 OK: login processed; success indicates grant/deny (FR-002,\
+    \ FR-003)\n- 400 Bad Request: structurally invalid JSON or missing required fields\
+    \ (FR-014)\n- 500 Internal Server Error: unexpected server issues\n\n1.2 Data\
+    \ Model\n\nDatabase: authDb (PostgreSQL)\n\nTables (new or confirmed):\n\n1) administrator_users\n\
+    \n- id UUID PRIMARY KEY\n- username VARCHAR(128) UNIQUE NOT NULL\n- email VARCHAR(256)\
+    \ UNIQUE NOT NULL\n- password_hash VARCHAR(255) NOT NULL\n- is_active BOOLEAN\
+    \ NOT NULL DEFAULT TRUE (FR-007, EC-004)\n- is_locked BOOLEAN NOT NULL DEFAULT\
+    \ FALSE (FR-015, EC-005)\n- failed_login_count INTEGER NOT NULL DEFAULT 0 (FR-010)\n\
+    - last_login_at TIMESTAMPTZ NULL (FR-009, EC-008)\n- created_at TIMESTAMPTZ NOT\
+    \ NULL DEFAULT now()\n- updated_at TIMESTAMPTZ NOT NULL DEFAULT now()\n\nIndexes:\n\
+    \n- IX_admin_users_login_identifier ON administrator_users (lower(username), lower(email))\
+    \ (FR-006, FR-001)\n\n2) auth_sessions\n\n- id UUID PRIMARY KEY\n- user_id UUID\
+    \ NOT NULL REFERENCES administrator_users(id) ON DELETE CASCADE (FR-013)\n- issued_at\
+    \ TIMESTAMPTZ NOT NULL\n- expires_at TIMESTAMPTZ NOT NULL\n- client_device_id\
+    \ VARCHAR(255) NULL\n- client_ip INET NULL\n- created_at TIMESTAMPTZ NOT NULL\
+    \ DEFAULT now()\n\nIndexes:\n\n- IX_auth_sessions_user_id ON auth_sessions(user_id)\n\
+    - IX_auth_sessions_expires_at ON auth_sessions(expires_at) (for cleanup jobs)\n\
+    \n3) admin_auth_audit_log (for optional audit; FR-020)\n\n- id BIGSERIAL PRIMARY\
+    \ KEY\n- user_id UUID NULL REFERENCES administrator_users(id)\n- username_or_email\
+    \ VARCHAR(256) NOT NULL\n- client_device_id VARCHAR(255) NULL\n- client_ip INET\
+    \ NULL\n- success BOOLEAN NOT NULL\n- reason_code VARCHAR(64) NOT NULL  -- e.g.\
+    \ INVALID_CREDENTIALS, UNAUTHORIZED\n- created_at TIMESTAMPTZ NOT NULL DEFAULT\
+    \ now()\n\n1.3 Internal Interfaces\n\nJava/Kotlin-style contracts (language-agnostic\
+    \ but concrete):\n\nInterface: AdminAuthenticationService\n\n- LoginResultDto\
+    \ login(LoginRequestDto request);\n\nClass: LoginRequestDto\n\n- String usernameOrEmail;\n\
+    - String password;\n- String clientDeviceId;\n- String clientIpAddress;\n\nClass:\
+    \ LoginResultDto\n\n- boolean success;\n- String errorCode;\n- String errorMessage;\n\
+    - boolean requiresAdditionalAction;\n- String sessionId;\n- UserSummaryDto user;\n\
+    - Instant issuedAt;\n- Instant expiresAt;\n\nClass: UserSummaryDto\n\n- String\
+    \ id;\n- String username;\n- String email;\n\nRepository interfaces:\n\n- AdministratorUserRepository\n\
+    \  - Optional<AdministratorUser> findByUsernameOrEmailIgnoreCase(String identifier);\n\
+    \  - void incrementFailedLoginCount(UUID userId);\n  - void resetFailedLoginCountAndUpdateLastLogin(UUID\
+    \ userId, Instant loginTime); (FR-009–FR-010)\n- AuthSessionRepository\n  - AuthSession\
+    \ createSession(UUID userId, String clientDeviceId, InetAddress clientIp, Duration\
+    \ ttl);\n- AdminAuthAuditLogRepository\n  - void save(LoginAuditRecord record);\n\
+    \nPassword hashing interface:\n\n- PasswordHasher\n  - boolean matches(String\
+    \ rawPassword, String passwordHash);\n\n\n2. Test Strategy\n\n2.1 API Contract\
+    \ Tests (integration)\n\n- T-API-001: Successful login (EC-007, FR-001–FR-003,\
+    \ FR-007, FR-012–FR-013, FR-018–FR-019)\n  - Request: valid usernameOrEmail +\
+    \ correct password, active, unlocked user\n  -"
+  affected_services:
+  - id: S-002
+  api_changes:
+  - service: S-002
+    endpoint: /auth/login
+    method: POST
+    change_type: define-or-refine-contract-and-behavior-for-admin-login-success-and-failure
+gaps: []
