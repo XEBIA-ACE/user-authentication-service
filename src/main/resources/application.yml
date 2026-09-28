@@ -1,0 +1,27 @@
+spring:
+  application:
+    name: user-authentication-service
+  datasource:
+    url: ${AUTH_DB_URL:jdbc:postgresql://localhost:5432/authdb}
+    username: ${AUTH_DB_USERNAME:auth}
+    password: ${AUTH_DB_PASSWORD:}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+server:
+  port: ${PORT:8080}
+
+auth:
+  session:
+    ttl: ${AUTH_SESSION_TTL:PT30M}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
